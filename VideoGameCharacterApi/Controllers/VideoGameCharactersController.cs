@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using VideoGameCharacter.Application.Dtos;
 using VideoGameCharacter.Application.Interfaces;
 
 namespace VideoGameCharacterApi.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class VideoGameCharactersController(IVideoGameCharacterService service) : ControllerBase
