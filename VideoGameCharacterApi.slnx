@@ -1,6 +1,7 @@
 <Solution>
-  <Project Path="VideoGameCharacter.Domain/VideoGameCharacter.Domain.csproj" />
   <Project Path="VideoGameCharacter.Application/VideoGameCharacter.Application.csproj" />
+  <Project Path="VideoGameCharacter.Domain/VideoGameCharacter.Domain.csproj" />
   <Project Path="VideoGameCharacter.Infrastructure/VideoGameCharacter.Infrastructure.csproj" />
+  <Project Path="VideoGameCharacter.UI/VideoGameCharacter.UI.csproj" />
   <Project Path="VideoGameCharacterApi/VideoGameCharacterApi.csproj" />
 </Solution>
