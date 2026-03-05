@@ -41,7 +41,7 @@ public class AuthService(
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request)
     {
-        var user = await userManager.FindByEmailAsync(request.Username);
+        var user = await userManager.FindByEmailAsync(request.Email);
 
         if (user == null || !await userManager.CheckPasswordAsync(user, request.Password))
         {

@@ -1,0 +1,87 @@
+@page "/register"
+@* Enable interactive server rendering to allow LocalStorage access, with prerendering disabled to prevent early JS Interop calls *@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@using VideoGameCharacter.Application.Dtos.Auth
+@using VideoGameCharacter.UI.Services
+@inject AuthApiService AuthApiService
+@inject NavigationManager NavigationManager
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-4">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-success text-white text-center">
+                    <h3 class="font-weight-light my-4">Create Account</h3>
+                </div>
+                <div class="card-body">
+                    @* FormName is required in .NET 8 Blazor for proper form submission mapping *@
+                    <EditForm Model="registerRequest" OnValidSubmit="HandleRegister" FormName="RegisterForm">
+                        <DataAnnotationsValidator />
+                        <div class="form-group mb-3">
+                            <label class="small mb-1" for="username">Username</label>
+                            <InputText id="username" class="form-control py-4" @bind-Value="registerRequest.Username" placeholder="Enter username" />
+                            <ValidationMessage For="() => registerRequest.Username" class="text-danger small" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small mb-1" for="email">Email</label>
+                            <InputText id="email" type="email" class="form-control py-4" @bind-Value="registerRequest.Email" placeholder="Enter email address" />
+                            <ValidationMessage For="() => registerRequest.Email" class="text-danger small" />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small mb-1" for="password">Password</label>
+                            <InputText id="password" type="password" class="form-control py-4" @bind-Value="registerRequest.Password" placeholder="Enter password" />
+                            <ValidationMessage For="() => registerRequest.Password" class="text-danger small" />
+                        </div>
+                        <div class="form-group d-flex align-items-center justify-content-between mt-4 mb-0">
+                            <button class="btn btn-success w-100" type="submit">Create Account</button>
+                        </div>
+                    </EditForm>
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger mt-3" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success mt-3" role="alert">
+                            @successMessage
+                        </div>
+                    }
+                </div>
+                <div class="card-footer text-center py-3">
+                    <div class="small"><a href="/login">Have an account? Go to login</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm] // Bind the form data to this model during submission
+    private RegisterRequest registerRequest { get; set; } = new() { Username = "", Email = "", Password = "" };
+    
+    private string? errorMessage;
+    private string? successMessage;
+
+    /// <summary>
+    /// Processes the registration request via the Auth API service.
+    /// </summary>
+    private async Task HandleRegister()
+    {
+        errorMessage = null;
+        successMessage = null;
+        
+        var result = await AuthApiService.RegisterAsync(registerRequest);
+        
+        if (result.IsSuccess)
+        {
+            successMessage = "Account created successfully! You can now login.";
+            NavigationManager.NavigateTo("/login");
+        }
+        else
+        {
+            errorMessage = result.Message;
+        }
+    }
+}

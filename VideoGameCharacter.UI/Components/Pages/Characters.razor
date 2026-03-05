@@ -1,8 +1,9 @@
 @page "/characters"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @using VideoGameCharacter.Application.Dtos
 @using VideoGameCharacter.UI.Services
 @inject CharacterApiClient ApiClient
-@rendermode InteractiveServer
 
 <PageTitle>Characters</PageTitle>
 
@@ -108,11 +109,17 @@
     private bool isEditing = false;
     private CharacterResponse editingCharacter = new();
 
+    /// <summary>
+    /// Lifecycle method called when the component is initialized.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         await LoadCharacters();
     }
 
+    /// <summary>
+    /// Loads the list of characters from the API.
+    /// </summary>
     private async Task LoadCharacters()
     {
         characters = await ApiClient.GetAllCharactersAsync();
@@ -143,6 +150,9 @@
         showModal = false;
     }
 
+    /// <summary>
+    /// Saves the current character (add or update) to the API.
+    /// </summary>
     private async Task SaveCharacter()
     {
         if (isEditing)
@@ -171,6 +181,9 @@
         await LoadCharacters();
     }
 
+    /// <summary>
+    /// Deletes a character by its identifier.
+    /// </summary>
     private async Task DeleteCharacter(int id)
     {
         await ApiClient.DeleteCharacterAsync(id);
