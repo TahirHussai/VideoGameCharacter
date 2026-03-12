@@ -26,6 +26,13 @@
                     </NavLink>
                 </div>
                 <div class="nav-item px-3">
+                    <AuthorizeView Roles="Admin" Context="adminContext">
+                        <NavLink class="nav-link" href="admin/users">
+                            <span class="bi bi-shield-lock-fill-nav-menu" aria-hidden="true"></span> Admin
+                        </NavLink>
+                    </AuthorizeView>
+                </div>
+                <div class="nav-item px-3">
                     <button class="nav-link btn btn-link text-white" @onclick="HandleLogout">
                         <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Logout (@context.User.Identity?.Name)
                     </button>

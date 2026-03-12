@@ -11,6 +11,7 @@ namespace VideoGameCharacter.Application.Services;
 
 public class AuthService(
     UserManager<IdentityUser> userManager,
+    RoleManager<IdentityRole> roleManager,
     IConfiguration configuration) : IAuthService
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
@@ -32,6 +33,13 @@ public class AuthService(
             };
         }
 
+        // Ensure "User" role exists and assign it
+        if (!await roleManager.RoleExistsAsync("User"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("User"));
+        }
+        await userManager.AddToRoleAsync(user, "User");
+
         return new AuthResponse
         {
             IsSuccess = true,
@@ -52,7 +60,7 @@ public class AuthService(
             };
         }
 
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
 
         return new AuthResponse
         {
@@ -61,18 +69,26 @@ public class AuthService(
         };
     }
 
-    private string GenerateJwtToken(IdentityUser user)
+    private async Task<string> GenerateJwtToken(IdentityUser user)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        var roles = await userManager.GetRolesAsync(user);
+
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName!),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],

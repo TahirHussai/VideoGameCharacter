@@ -1,0 +1,152 @@
+@page "/admin/users"
+@using Microsoft.AspNetCore.Authorization
+@using VideoGameCharacter.Application.Dtos.Admin
+@using VideoGameCharacter.UI.Services
+@attribute [Authorize(Roles = "Admin")]
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject AdminApiService AdminApiService
+
+<div class="container mt-4">
+    <h2 class="mb-4">User Management</h2>
+
+    @if (users == null)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Create New User</h5>
+            </div>
+            <div class="card-body">
+                <EditForm Model="newUser" OnValidSubmit="HandleCreateUser" class="row g-3">
+                    <DataAnnotationsValidator />
+                    <div class="col-md-3">
+                        <label class="form-label">Username</label>
+                        <InputText @bind-Value="newUser.Username" class="form-control" placeholder="Username" />
+                        <ValidationMessage For="@(() => newUser.Username)" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Email</label>
+                        <InputText @bind-Value="newUser.Email" class="form-control" placeholder="Email" />
+                        <ValidationMessage For="@(() => newUser.Email)" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Password</label>
+                        <InputText @bind-Value="newUser.Password" type="password" class="form-control" placeholder="Password" />
+                        <ValidationMessage For="@(() => newUser.Password)" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Role</label>
+                        <InputSelect @bind-Value="newUser.Role" class="form-select">
+                            <option value="">Select Role</option>
+                            @foreach (var role in availableRoles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => newUser.Role)" />
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">Create</button>
+                    </div>
+                </EditForm>
+                @if (!string.IsNullOrEmpty(createMessage))
+                {
+                    <div class="alert alert-info mt-3 py-2">@createMessage</div>
+                }
+            </div>
+        </div>
+
+        <div class="table-responsive shadow-sm">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Roles</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>@user.Username</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @foreach (var role in user.Roles)
+                                {
+                                    <span class="badge bg-info text-dark me-1">@role</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="input-group input-group-sm" style="max-width: 200px;">
+                                    <select class="form-select" @onchange="@(e => HandleUpdateRole(user.Id, e.Value?.ToString()))">
+                                        <option value="">Update Role...</option>
+                                        @foreach (var role in availableRoles)
+                                        {
+                                            <option value="@role" selected="@(user.Roles.Contains(role))">@role</option>
+                                        }
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<UserDto>? users;
+    private List<string> availableRoles = new();
+    private AdminCreateUserRequest newUser = new() { Username = "", Email = "", Password = "", Role = "" };
+    private string? createMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        users = await AdminApiService.GetUsersAsync();
+        availableRoles = await AdminApiService.GetRolesAsync();
+        if (!availableRoles.Contains("Admin")) availableRoles.Add("Admin");
+        if (!availableRoles.Contains("User")) availableRoles.Add("User");
+    }
+
+    private async Task HandleCreateUser()
+    {
+        createMessage = "Creating user...";
+        var success = await AdminApiService.CreateUserAsync(newUser);
+        if (success)
+        {
+            createMessage = "User created successfully!";
+            newUser = new() { Username = "", Email = "", Password = "", Role = "" };
+            await RefreshData();
+        }
+        else
+        {
+            createMessage = "Error creating user.";
+        }
+    }
+
+    private async Task HandleUpdateRole(string userId, string? newRole)
+    {
+        if (string.IsNullOrEmpty(newRole)) return;
+
+        var success = await AdminApiService.SetUserRoleAsync(new UpdateRoleRequest { UserId = userId, Role = newRole });
+        if (success)
+        {
+            await RefreshData();
+        }
+    }
+}
