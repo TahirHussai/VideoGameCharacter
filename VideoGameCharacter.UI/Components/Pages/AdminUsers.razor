@@ -117,17 +117,26 @@
 
     private async Task RefreshData()
     {
-        users = await AdminApiService.GetUsersAsync();
-        availableRoles = await AdminApiService.GetRolesAsync();
-        if (!availableRoles.Contains("Admin")) availableRoles.Add("Admin");
-        if (!availableRoles.Contains("User")) availableRoles.Add("User");
+        var usersResponse = await AdminApiService.GetUsersAsync();
+        if (usersResponse.IsSuccess)
+        {
+            users = usersResponse.Data;
+        }
+
+        var rolesResponse = await AdminApiService.GetRolesAsync();
+        if (rolesResponse.IsSuccess)
+        {
+            availableRoles = rolesResponse.Data ?? new List<string>();
+            if (!availableRoles.Contains("Admin")) availableRoles.Add("Admin");
+            if (!availableRoles.Contains("User")) availableRoles.Add("User");
+        }
     }
 
     private async Task HandleCreateUser()
     {
         createMessage = "Creating user...";
-        var success = await AdminApiService.CreateUserAsync(newUser);
-        if (success)
+        var response = await AdminApiService.CreateUserAsync(newUser);
+        if (response.IsSuccess)
         {
             createMessage = "User created successfully!";
             newUser = new() { Username = "", Email = "", Password = "", Role = "" };
@@ -135,7 +144,7 @@
         }
         else
         {
-            createMessage = "Error creating user.";
+            createMessage = $"Error creating user: {response.ErrorMessage}";
         }
     }
 
@@ -143,8 +152,8 @@
     {
         if (string.IsNullOrEmpty(newRole)) return;
 
-        var success = await AdminApiService.SetUserRoleAsync(new UpdateRoleRequest { UserId = userId, Role = newRole });
-        if (success)
+        var response = await AdminApiService.SetUserRoleAsync(new UpdateRoleRequest { UserId = userId, Role = newRole });
+        if (response.IsSuccess)
         {
             await RefreshData();
         }

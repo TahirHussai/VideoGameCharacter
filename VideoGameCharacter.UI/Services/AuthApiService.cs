@@ -9,9 +9,10 @@ namespace VideoGameCharacter.UI.Services;
 /// Service for interacting with the Authentication API.
 /// </summary>
 public class AuthApiService(
-    HttpClient httpClient, 
-    ILocalStorageService localStorage, 
-    AuthenticationStateProvider authStateProvider)
+    HttpClient httpClient,
+    ILocalStorageService localStorage,
+    AuthenticationStateProvider authStateProvider,
+    TokenService tokenService)
 {
     /// <summary>
     /// Registers a new user.
@@ -33,8 +34,11 @@ public class AuthApiService(
         if (result.IsSuccess && !string.IsNullOrEmpty(result.Token))
         {
             await localStorage.SetItemAsync("authToken", result.Token);
-            ((CustomAuthenticationStateProvider)authStateProvider).MarkUserAsAuthenticated(result.Token);
-            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.Token);
+
+            tokenService.Token = result.Token; // ⭐ important
+
+            ((CustomAuthenticationStateProvider)authStateProvider)
+                .MarkUserAsAuthenticated(result.Token);
         }
 
         return result;
@@ -43,7 +47,10 @@ public class AuthApiService(
     public async Task LogoutAsync()
     {
         await localStorage.RemoveItemAsync("authToken");
-        ((CustomAuthenticationStateProvider)authStateProvider).MarkUserAsLoggedOut();
-        httpClient.DefaultRequestHeaders.Authorization = null;
+
+        tokenService.Token = null;
+
+        ((CustomAuthenticationStateProvider)authStateProvider)
+            .MarkUserAsLoggedOut();
     }
 }

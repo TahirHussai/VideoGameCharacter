@@ -18,8 +18,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
         var userRoleId = "7f0e34c9-b7b2-4d5e-8e8e-8a0a9a0a9a0a";
 
         builder.Entity<IdentityRole>().HasData(
-            new IdentityRole { Id = adminRoleId, Name = "Admin", NormalizedName = "ADMIN" },
-            new IdentityRole { Id = userRoleId, Name = "User", NormalizedName = "USER" }
+            new IdentityRole { Id = adminRoleId, Name = "Admin", NormalizedName = "ADMIN", ConcurrencyStamp = "6f0e34c9-b7b2-4d5e-8e8e-8a0a9a0a9a0e" },
+            new IdentityRole { Id = userRoleId, Name = "User", NormalizedName = "USER", ConcurrencyStamp = "7f0e34c9-b7b2-4d5e-8e8e-8a0a9a0a9a0f" }
         );
 
         // Seed Admin User
@@ -31,12 +31,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbCo
             NormalizedUserName = "ADMIN@VIDEOGAME.COM",
             Email = "admin@videogame.com",
             NormalizedEmail = "ADMIN@VIDEOGAME.COM",
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            PasswordHash = "AQAAAAIAAYagAAAAEAfTkxvr0sgR0Zdqh6VMeoLzMc4DzP7G3j0eLr7H5nZYAIPiCydjgeZsP2rg8H0Ksw==",
+            SecurityStamp = "8f0e34c9-b7b2-4d5e-8e8e-8a0a9a0a9a0g",
+            ConcurrencyStamp = "8f0e34c9-b7b2-4d5e-8e8e-8a0a9a0a9a0h"
         };
-
-        var hasher = new PasswordHasher<IdentityUser>();
-        adminUser.PasswordHash = hasher.HashPassword(adminUser, "Admin123!");
-
+        // Original code  replaced:
+       // adminUser.PasswordHash = hasher.HashPassword(adminUser, "Admin123!");
         builder.Entity<IdentityUser>().HasData(adminUser);
 
         // Assign Admin role to Admin user

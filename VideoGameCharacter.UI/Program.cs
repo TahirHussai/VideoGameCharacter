@@ -11,9 +11,12 @@ builder.Services.AddRazorComponents()
 
 // --- Authentication & Local Storage ---
 builder.Services.AddBlazoredLocalStorage();
+builder.Services.AddScoped<JwtAuthorizationHandler>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<ApiErrorHandlingHandler>();
 
 // --- API Clients & Configuration ---
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7100/";
@@ -21,17 +24,20 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7100/
 builder.Services.AddHttpClient<CharacterApiClient>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
-});
+}).AddHttpMessageHandler<JwtAuthorizationHandler>();
+// .AddHttpMessageHandler<ApiErrorHandlingHandler>();
 
 builder.Services.AddHttpClient<AuthApiService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
-});
+})//.AddHttpMessageHandler<JwtAuthorizationHandler>()
+ .AddHttpMessageHandler<ApiErrorHandlingHandler>();
 
 builder.Services.AddHttpClient<AdminApiService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
-});
+})//.AddHttpMessageHandler<JwtAuthorizationHandler>()
+  .AddHttpMessageHandler<ApiErrorHandlingHandler>();
 
 var app = builder.Build();
 

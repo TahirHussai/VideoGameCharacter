@@ -1,29 +1,28 @@
+using Blazored.LocalStorage;
 using System.Net.Http.Json;
 using VideoGameCharacter.Application.Dtos.Admin;
 
 namespace VideoGameCharacter.UI.Services;
 
-public class AdminApiService(HttpClient httpClient)
+public class AdminApiService(HttpClient httpClient, ILocalStorageService localStorageService) : BaseApiService(httpClient,  localStorageService)
 {
-    public async Task<List<UserDto>> GetUsersAsync()
+    public async Task<ApiResponse<List<UserDto>>> GetUsersAsync()
     {
-        return await httpClient.GetFromJsonAsync<List<UserDto>>("api/admin/users") ?? new List<UserDto>();
+        return await GetAsync<List<UserDto>>("api/admin/users");
     }
 
-    public async Task<bool> CreateUserAsync(AdminCreateUserRequest request)
+    public async Task<ApiResponse<bool>> CreateUserAsync(AdminCreateUserRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync("api/admin/create-user", request);
-        return response.IsSuccessStatusCode;
+        return await PostAsync("api/admin/create-user", request);
     }
 
-    public async Task<bool> SetUserRoleAsync(UpdateRoleRequest request)
+    public async Task<ApiResponse<bool>> SetUserRoleAsync(UpdateRoleRequest request)
     {
-        var response = await httpClient.PostAsJsonAsync("api/admin/set-role", request);
-        return response.IsSuccessStatusCode;
+        return await PostAsync("api/admin/set-role", request);
     }
 
-    public async Task<List<string>> GetRolesAsync()
+    public async Task<ApiResponse<List<string>>> GetRolesAsync()
     {
-        return await httpClient.GetFromJsonAsync<List<string>>("api/admin/roles") ?? new List<string>();
+        return await GetAsync<List<string>>("api/admin/roles");
     }
 }

@@ -4,6 +4,7 @@
 @using VideoGameCharacter.Application.Dtos
 @using VideoGameCharacter.UI.Services
 @inject CharacterApiClient ApiClient
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <PageTitle>Characters</PageTitle>
 
@@ -122,7 +123,16 @@
     /// </summary>
     private async Task LoadCharacters()
     {
-        characters = await ApiClient.GetAllCharactersAsync();
+        var response = await ApiClient.GetAllCharactersAsync();
+        if (response.IsSuccess)
+        {
+            characters = response.Data;
+        }
+        else
+        {
+            // Handle error (e.g., show a message)
+            characters = new List<CharacterResponse>();
+        }
     }
 
     private void CreateNewCharacter()
@@ -155,6 +165,7 @@
     /// </summary>
     private async Task SaveCharacter()
     {
+        ApiResponse<bool> response;
         if (isEditing)
         {
             var updateRequest = new UpdateCharacterRequest
@@ -164,7 +175,7 @@
                 Game = editingCharacter.Game,
                 Role = editingCharacter.Role
             };
-            await ApiClient.UpdateCharacterAsync(editingCharacter.Id, updateRequest);
+            response = await ApiClient.UpdateCharacterAsync(editingCharacter.Id, updateRequest);
         }
         else
         {
@@ -174,11 +185,18 @@
                 Game = editingCharacter.Game,
                 Role = editingCharacter.Role
             };
-            await ApiClient.AddCharacterAsync(createRequest);
+            response = await ApiClient.AddCharacterAsync(createRequest);
         }
 
-        showModal = false;
-        await LoadCharacters();
+        if (response.IsSuccess)
+        {
+            showModal = false;
+            await LoadCharacters();
+        }
+        else
+        {
+            // Potential: show error message in modal
+        }
     }
 
     /// <summary>
@@ -186,7 +204,10 @@
     /// </summary>
     private async Task DeleteCharacter(int id)
     {
-        await ApiClient.DeleteCharacterAsync(id);
-        await LoadCharacters();
+        var response = await ApiClient.DeleteCharacterAsync(id);
+        if (response.IsSuccess)
+        {
+            await LoadCharacters();
+        }
     }
 }

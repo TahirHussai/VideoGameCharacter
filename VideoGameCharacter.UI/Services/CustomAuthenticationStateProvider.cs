@@ -9,31 +9,32 @@ namespace VideoGameCharacter.UI.Services;
 /// <summary>
 /// Provides a custom authentication state based on specialized logic, such as retrieving a JWT token from LocalStorage.
 /// </summary>
-public class CustomAuthenticationStateProvider(ILocalStorageService localStorage, HttpClient httpClient) : AuthenticationStateProvider
+public class CustomAuthenticationStateProvider(
+    ILocalStorageService localStorage,
+    HttpClient httpClient,
+    TokenService tokenService) : AuthenticationStateProvider
 {
     /// <summary>
     /// Retrieves the current authentication state of the user.
     /// </summary>
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        try
+        var token = await localStorage.GetItemAsync<string>("authToken");
+
+        if (string.IsNullOrWhiteSpace(token))
         {
-            var token = await localStorage.GetItemAsync<string>("authToken");
-
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-            }
-
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt")));
+            return new AuthenticationState(
+                new ClaimsPrincipal(new ClaimsIdentity()));
         }
-        catch (InvalidOperationException)
-        {
-            // Prerendering phase - JS Interop not available
-            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-        }
+
+        // ⭐ IMPORTANT
+        tokenService.Token = token;
+
+        httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        return new AuthenticationState(
+            new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt")));
     }
 
     /// <summary>
@@ -63,7 +64,9 @@ public class CustomAuthenticationStateProvider(ILocalStorageService localStorage
         var jsonBytes = ParseBase64WithoutPadding(payload);
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
 
-        return keyValuePairs!.Select(kvp =>
+        var claims = new List<Claim>();
+
+        foreach (var kvp in keyValuePairs!)
         {
             var claimType = kvp.Key switch
             {
@@ -72,8 +75,21 @@ public class CustomAuthenticationStateProvider(ILocalStorageService localStorage
                 "role" => ClaimTypes.Role,
                 _ => kvp.Key
             };
-            return new Claim(claimType, kvp.Value.ToString()!);
-        });
+
+            if (kvp.Value is JsonElement element && element.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in element.EnumerateArray())
+                {
+                    claims.Add(new Claim(claimType, item.ToString()));
+                }
+            }
+            else
+            {
+                claims.Add(new Claim(claimType, kvp.Value.ToString()!));
+            }
+        }
+
+        return claims;
     }
 
     private byte[] ParseBase64WithoutPadding(string base64)
